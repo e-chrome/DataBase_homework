@@ -33,7 +33,7 @@ select collection.name from collection
     join album on track.album_id = album.id
     join performer_album on album.id = performer_album.album_id
     join performer on performer_album.performer_id = performer.id 
-    where performer.alias = 'Кобзон';
+    where performer.alias = 'РљРѕР±Р·РѕРЅ';
 	       
 --6
 select album.name from album
