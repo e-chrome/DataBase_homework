@@ -17,43 +17,32 @@ select a.name, avg(t.duration) from album a
     group by a.name;
     
 --4
-select p.alias, a.name as album_name, a.year_of_issue from
-    (select performer.alias, performer_album.album_id from performer
-        join performer_album
-        on performer.id = performer_album.performer_id) as p
-    join album a
-    on p.album_id = a.id
-    where a.year_of_issue <> 2020;
-  
+select performer.alias from performer
+    join performer_album on performer.id = performer_album.performer_id 
+    join album on album.id = performer_album.album_id
+    where performer.alias not in
+        (select performer.alias from performer
+	        join performer_album on performer.id = performer_album.performer_id 
+	        join album on album.id = performer_album.album_id
+	        where album.year_of_issue = 2020); 
+     
 --5
-select col.collection_name, per.alias from
-    (select ca.collection_name, t.album_id from
-        (select c.name as collection_name, ct.track_id from collection c
-            join collection_track ct 
-            on c.id = ct.collection_id) as ca
-        join track t
-        on ca.track_id = t.id) as col
-    join
-        (select p.alias, pa.album_id from performer p
-            join performer_album pa 
-            on p.id = pa.performer_id) as per
-    on col.album_id = per.album_id
-    where per.alias = 'Êמבחמם';
-   
+select collection.name from collection 
+    join collection_track on collection.id = collection_track.collection_id
+    join track on collection_track.track_id = track.id
+    join album on track.album_id = album.id
+    join performer_album on album.id = performer_album.album_id
+    join performer on performer_album.performer_id = performer.id 
+    where performer.alias = 'Êמבחמם';
+	       
 --6
 select album.name from album
-    join
-	(select pa.album_id from performer_album pa 
-	    join
-	    (select perf.id as perf_id from
-	        (select p.alias, p.id, gp.genre_id from performer p 
-	            join genre_performer gp 
-	            on p.id = gp.performer_id) as perf
-	        group by perf.id
-	        having count(perf.genre_id) > 1) as p_id
-	    on pa.performer_id = p_id.perf_id) as a_id
-	on album.id = a_id.album_id;
-   
+    join performer_album on album.id = performer_album.album_id 
+    where performer_album.performer_id in 
+    (select performer_id from genre_performer
+        group by performer_id 
+        having count(genre_id) > 1);
+        
 --7
 select name from track t
     left join collection_track ct
@@ -61,26 +50,23 @@ select name from track t
     where ct.track_id is null;
    
 --8
-select alias from performer
-    join
-	(select performer_id from performer_album as pa
-	    join
-		(select album_id from track
-		    where duration = (select min(duration) from track)) as a_id
-		on pa.album_id = a_id.album_id) as p_id
-    on performer.id = p_id.performer_id;
+select performer.alias from performer
+    join performer_album on performer.id = performer_album.performer_id
+    where performer_album.album_id in 
+        (select track.album_id from track
+            where track.duration = (select min(duration) from track));
    
---9
-select a.name from album a
-    join
-	(select album_id from
-	    (select album_id, count(id) as track_count from track
-		    group by album_id) as t
-	    where track_count =
-			(select min(track_count) from 
-		        (select album_id, count(id) as track_count from track
-		        group by album_id) as t)) as a_id
-    on a.id = a_id.album_id;
+   
+--9 
+select album.name from album
+    where album.id in 
+        (select track.album_id from track
+            group by track.album_id
+            having count(track.id) = 
+                (select min(track_count) from
+                    (select count(id) as track_count from track
+                        group by album_id) as t));
+                     
 		
 
 
